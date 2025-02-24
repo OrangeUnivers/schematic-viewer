@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schematic Viewer with Three.js</title>
+
+    <!-- Import map for Three.js and other dependencies -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.173.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- External dependencies -->
+    <script src="nbt.js"></script>
+    <script src="https://unpkg.com/pako@latest/dist/pako.min.js"></script>
+
+    <!-- Style for the page -->
+    <style>
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftRegular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftItalic.otf') format('opentype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftBold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftBoldItalic.otf') format('opentype');
+            font-weight: bold;
+            font-style: italic;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #tooltip {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            text-align: left;
+            z-index: 2;
+            display: block;
+            color: #AAAAAA;
+            opacity: 0;
+            font-family: Minecraft;
+            background-color: rgb(21, 21, 21);
+            transition: opacity 0.3s;
+            border-radius: 12px;
+            padding: 10px;
+            border: 3px solid #0000AA; 
+            outline: 4px solid rgb(21, 21, 21);
+            outline-offset: -0.5px;
+        }
+        #tooltip #block {
+            color: white;
+        }
+        #tooltip #position {
+            color: #55FFFF;
+        }
+        #deletion {
+            color: red;
+            /* pointer-events: none; */
+            cursor: pointer;
+        }
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: rgb(255, 255, 255);
+            height: 100%;
+        }
+        #fileUpload {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: #AAAAAA;
+            opacity: 1;
+            font-family: Minecraft;
+            background-color: rgb(43, 43, 43);
+            transition: opacity 0.5s;
+            text-align: center;
+        }
+        #img {
+            color: white;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .custom-file-upload {
+            border: 6px solid #AAAAAA;
+            display: inline-block;
+            padding: 6px 12px;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .custom-file-upload:hover {
+            background-color: rgb(76, 76, 76);
+        }
+        #dropzone {
+        	box-sizing: border-box;
+        	display: none;
+        	opacity: 0;
+        	position: fixed;
+        	width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            left: 10px;
+            top: 10px;
+            z-index: 99999;
+        	background: rgba(255, 111, 0, 0.2);
+        	border: 5px dashed rgb(255, 111, 0);
+            border-radius: 15px;
+            transition: opacity 0.3s;
+        }
+        #manualFileInput {
+            transition: color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div id="dropzone"></div>
+    <!-- Info Section -->
+    <div id="fileUpload">
+        <img src="fileUpload.svg" alt="Upload File" width="150px">
+        <label for="fileInput" class="custom-file-upload">
+            <span id="manualFileInput">Select Create Schematic</span>
+        </label>
+        <input type="file" id="fileInput" accept=".nbt">
+        <span>or drop the file into the site</span>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <b>Block:</b> <span id="block">Structured Glass</span>
+        <span id="namespacesay">in</span> <span id="namespace" style="color: #5555FF; font-style: italic;">Mekanism</span><br>
+        <b>Position:</b> <span id="position">0, 4, 1</span><br><br>
+        <b id="deletion">Remove</b>
+    </div>
+    <canvas id="blockDisplayCanvas" style=" position: absolute; top: 10px; right: 10px; text-align: right; opacity: 0.6;"></canvas>
+
+
+    <!-- Main JavaScript -->
+    <script src="main.js" type="module"></script>
+
+</body>
+</html>

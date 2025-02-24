@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schematic Viewer with Three.js</title>
+
+    <!-- Import map for Three.js and other dependencies -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.173.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- External dependencies -->
+    <script src="nbt.js"></script>
+    <script src="https://unpkg.com/pako@latest/dist/pako.min.js"></script>
+
+    <!-- Style for the page -->
+    <style>
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftRegular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftItalic.otf') format('opentype');
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftBold.otf') format('opentype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Minecraft';
+            src: url('fonts/MinecraftBoldItalic.otf') format('opentype');
+            font-weight: bold;
+            font-style: italic;
+        }
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #tooltip {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            text-align: left;
+            z-index: 2;
+            display: block;
+            color: #AAAAAA;
+            opacity: 0;
+            font-family: Minecraft;
+            background-color: rgb(21, 21, 21);
+            transition: opacity 0.3s;
+            border-radius: 12px;
+            padding: 10px;
+            border: 3px solid #0000AA; 
+            outline: 4px solid rgb(21, 21, 21);
+            outline-offset: -0.5px;
+        }
+        #tooltip #block {
+            color: white;
+        }
+        #tooltip #position {
+            color: #55FFFF;
+        }
+        #deletion {
+            color: red;
+            /* pointer-events: none; */
+            cursor: pointer;
+        }
+        #threeCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: rgb(255, 255, 255);
+            height: 100%;
+        }
+        #info {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            text-align: center;
+            align-items: center;
+            z-index: 100;
+            display: block;
+            color: #AAAAAA;
+            opacity: 1;
+            /* font-family: Minecraft; */
+            background-color: rgb(21, 21, 21);
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <!-- Info Section -->
+    <div id="info">
+        Hello
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <b>Block:</b> <span id="block">Structured Glass</span>
+        <span id="namespacesay">in</span> <span id="namespace" style="color: #5555FF; font-style: italic;">Mekanism</span><br>
+        <b>Position:</b> <span id="position">0, 4, 1</span><br><br>
+        <b id="deletion">Remove</b>
+    </div>
+
+    <!-- File Input for NBT File -->
+    <input type="file" id="nbtFileInput">
+
+    <!-- <script>
+    document.getElementById('nbtFileInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+
+        reader.onload = function() {
+            let buffer = new Uint8Array(reader.result);
+
+            try {
+                // Check if the NBT file is compressed (gzip header: 0x1F 0x8B)
+                if (buffer[0] === 0x1F && buffer[1] === 0x8B) {
+                    buffer = pako.ungzip(buffer); // Decompress using pako
+                }
+
+                nbt.parse(buffer, function(error, data) {
+                    if (error) {
+                        console.log("Error parsing NBT file: " + error.message);
+                        return;
+                    }
+                    console.log(JSON.stringify(data, null, 2));
+                });
+            } catch (err) {
+                console.log("Error parsing NBT file: " + err.message);
+            }
+        };
+    });
+    </script> -->
+
+    <!-- Canvas for Three.js Rendering -->
+
+    <!-- Main JavaScript -->
+    <script src="main.js" type="module"></script>
+
+</body>
+</html>
