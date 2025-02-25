@@ -7,11 +7,26 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 let langFile = {};
 
+let examples = [
+    {
+        "name": "Industrial Turbine",
+        "id": "industrial_turbine_5x5x9"
+    }
+]
+
+examples.forEach(function(example) {
+    let currentExample = document.createElement("example");
+    currentExample.textContent = example.name;
+    currentExample.onclick = function() {
+        loadExample(example.id);
+    };
+    document.getElementById('fileExampleList').appendChild(currentExample);
+});
+
 fetch('lang/en.lang')
     .then(response => response.text())
     .then(data => {
         langFile["en"] = data.replaceAll(/^\/\/.*$/gm, '');
-        console.log(data.replaceAll(/^\/\/.*$/gm, ''))
     })
     .catch(error => {
         console.error('Error loading the file:', error);
@@ -169,6 +184,20 @@ function getPath(path, type="textures") {
     }
 }
 
+document.getElementById("seeExamples").addEventListener('click', function(event) {
+    document.getElementById("fileExamples").style.display = "flex";
+    setTimeout(function() {
+        document.getElementById("fileExamples").style.opacity = 1;
+    }, 100)
+})
+
+document.getElementById("fileExampleClose").addEventListener('click', function(event) {
+    document.querySelector('#fileExamples').style.opacity = 0;
+    setTimeout(function(){
+        document.querySelector('#fileExamples').style.display = "none";
+    }, 3000);
+})
+
 function constructScene(blocksData) {
     blocksData.forEach(function(element) {
         const filePath = element.namespace + "/" + element.id;
@@ -187,7 +216,9 @@ function constructScene(blocksData) {
                                 namespace: element.namespace,
                                 id: element.id
                             };
-                            gltf.position.set(element.position[0], element.position[1], element.position[2]);
+                            gltf.scene.position.set(element.position[0] - 0.5,
+                                element.position[1] - 0.5,
+                                element.position[2] - 0.5);
                             scene.add(gltf.scene);
                             savedBlocks.push(gltf);
                         }, undefined, function ( error ) {
@@ -229,8 +260,10 @@ function constructScene(blocksData) {
 
 function handleFile(file) {
     document.querySelector('#fileUpload').style.opacity = 0;
+    document.querySelector('#fileExamples').style.opacity = 0;
     setTimeout(function(){
         document.querySelector('#fileUpload').style.display = "none";
+        document.querySelector('#fileExamples').style.display = "none";
     }, 3000);
     savedBlocks.forEach(function(obj) {
         if (obj.geometry) {
@@ -313,8 +346,8 @@ document.addEventListener('mousedown', (event) => {
     console.log(window.getComputedStyle(document.querySelector('#tooltip')).opacity == 0.9)
     console.log((event.target.id === 'tooltip' || event.target.closest("#tooltip") != null)
     && window.getComputedStyle(document.querySelector('#tooltip')).opacity == 0.9)
-    if ((event.target.id === 'tooltip' || event.target.closest("#tooltip") != null)
-        && window.getComputedStyle(document.querySelector('#tooltip')).opacity == 0.9) {
+    if (((event.target.id === 'tooltip' || event.target.closest("#tooltip") != null)
+        && window.getComputedStyle(document.querySelector('#tooltip')).opacity == 0.9) || event.target.id === 'seeExamples') {
         return; // Skip the rest of the logic if clicking on #tooltip
     }
     const coords = new THREE.Vector2(
@@ -379,8 +412,26 @@ document.querySelector('#tooltip #deletion').addEventListener('click', function(
     currentSelectionClone = undefined
 });
 document.getElementById('fileInput').addEventListener('change', function(event) {
+    console.log(event.target.files[0])
     handleFile(event.target.files[0])
 });
+
+function loadExample(example) {
+    console.log(example)
+    fileExistence('examples/' + example + ".nbt", function(exampleExists) {
+        console.log(exampleExists ? "Yeas" : "nooo")
+    })
+    fetch('examples/' + example + ".nbt")
+        .then(response => response.blob()) // Get as a Blob
+        .then(blob => {
+            let file = new File([blob], example + ".nbt", { type: "application/octet-stream" });
+            handleFile(file); // Now consistent with input file handling
+        })
+        .catch(error => {
+            console.error('Error loading the file by example:', error);
+        });
+    
+}
 
 let moveSpeed = 0.5; // Adjust the speed of movement
 
@@ -395,7 +446,7 @@ document.addEventListener('keydown', function(event) {
 
 
 let angle = 0;
-let camerabuffer = 0;
+let rotate = true;
 // Animation loop
 
 function blockDisplayAnimation() {
@@ -403,17 +454,11 @@ function blockDisplayAnimation() {
 }
 
 function animate(center) {
-    camerabuffer += 1
-    if (camerabuffer >= 600) {
-        console.log(camera.position);
-        camerabuffer = 0;
-    }
     const radius = 10;
-    angle += 0.01; // Adjust speed
+    angle += (rotate ? 0.01 : 0);
     camera.position.x = center[0] + Math.cos(angle) * radius;
     camera.position.z = center[2] + Math.sin(angle) * radius;
-    camera.lookAt(center[0], center[1], center[2]); // Keep looking at the center
-
+    camera.lookAt(center[0], center[1], center[2]);
     renderer.render( scene, camera );
 }
 
