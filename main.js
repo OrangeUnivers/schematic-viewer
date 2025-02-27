@@ -206,166 +206,181 @@ document.getElementById("fileExampleClose").addEventListener('click', function(e
     }, 3000);
 })
 
+function getNbt(object, name) {
+    switch(name) {
+        case "mekanismgenerators":
+            return {"mode": object.state};
+    }
+}
+
 function constructScene(blocksData) {
     blocksData.forEach(function(element) {
-        const filePath = element.namespace + "/" + element.id;
-        fileExistence(getPath(filePath, "states"), function(stateExists) {
-            if (stateExists) {
+        if (element.namespace + ":" + element.id != "minecraft:air") {
+            const filePath = element.namespace + "/" + element.id;
+            fileExistence(getPath(filePath, "states"), function(stateExists) {
+                if (stateExists) {
 
-            } else {
-                fileExistence(getPath(filePath, "models"), function(modelExists) {
-                    if (modelExists) {
-                        fetch(getPath(filePath, "models"))
-                        .then(response => response.text())
-                        .then(data => {
-                            let sides = {}
-                            const configSides = [
-                                "x+", "x-",
-                                "y+", "y-",
-                                "z+", "z-"
-                            ]
-                            Object.entries(JSON.parse(data)).forEach(([key, value]) => {
-                                switch(key) {
-                                    case "end":
-                                        sides["y+"] = value;
-                                        sides["y-"] = value;
-                                        break;
-                                    case "side":
-                                        sides["x+"] = value;
-                                        sides["x-"] = value;
-                                        sides["z+"] = value;
-                                        sides["z-"] = value;
-                                        break;
-                                    case "top":
-                                        sides["y+"] = value;
-                                        break;
-                                    case "bottom":
-                                        sides["y-"] = value;
-                                        break;
-                                    case "front":
-                                        sides["x+"] = value;
-                                        break;
-                                    case "back":
-                                        sides["x-"] = value;
-                                        break;
-                                    case "bottom":
-                                        sides["z+"] = value;
-                                        break;
-                                    case "left":
-                                        sides["z-"] = value;
-                                        break;
-                                }
+                } else {
+                    fileExistence(getPath(filePath, "models"), function(modelExists) {
+                        if (modelExists) {
+                            fetch(getPath(filePath, "models"))
+                            .then(response => response.text())
+                            .then(data => {
+                                let sides = {}
+                                const configSides = [
+                                    "x+", "x-",
+                                    "y+", "y-",
+                                    "z+", "z-"
+                                ]
+                                Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+                                    switch(key) {
+                                        case "all":
+                                            sides["x+"] = value;
+                                            sides["x-"] = value;
+                                            sides["y+"] = value;
+                                            sides["y-"] = value;
+                                            sides["z+"] = value;
+                                            sides["z-"] = value;
+                                            break;
+                                        case "end":
+                                            sides["y+"] = value;
+                                            sides["y-"] = value;
+                                            break;
+                                        case "side":
+                                            sides["x+"] = value;
+                                            sides["x-"] = value;
+                                            sides["z+"] = value;
+                                            sides["z-"] = value;
+                                            break;
+                                        case "top":
+                                            sides["y+"] = value;
+                                            break;
+                                        case "bottom":
+                                            sides["y-"] = value;
+                                            break;
+                                        case "front":
+                                            sides["x+"] = value;
+                                            break;
+                                        case "back":
+                                            sides["x-"] = value;
+                                            break;
+                                        case "bottom":
+                                            sides["z+"] = value;
+                                            break;
+                                        case "left":
+                                            sides["z-"] = value;
+                                            break;
+                                    }
+                                });
+                                configSides.forEach(function(currentSide) {
+                                    if (!sides[currentSide]) {
+                                        sides[currentSide] = "minecraft:missing";
+                                    } else {
+                                        fileExistence(getPath(
+                                            sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
+                                            if (!currentSideExists) {
+                                                sides[currentSide] = "minecraft:missing";
+                                            }
+                                        });
+                                    }
+                                });
+                                let materialsSides = {};
+                                Object.entries(sides).forEach(([key, value]) => {
+                                    const sideTexture = new THREE.TextureLoader().load(getPath(
+                                        sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
+                                        "textures"));
+                                    sideTexture.magFilter = THREE.NearestFilter;
+                                    sideTexture.minFilter = THREE.NearestFilter;
+                                    sideTexture.generateMipmaps = false;
+                                    sideTexture.wrapS = THREE.RepeatWrapping;
+                                    sideTexture.wrapT = THREE.RepeatWrapping;
+                                    sideTexture.repeat.set(1, 1);
+                                    sideTexture.colorSpace = "srgb";
+                                    
+                                    materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
+                                });
+                                let materials = [
+                                    materialsSides["x+"],
+                                    materialsSides["x-"],
+                                    materialsSides["y+"],
+                                    materialsSides["y-"],
+                                    materialsSides["z+"],
+                                    materialsSides["z-"]
+                                ];
+                                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                                const cube = new THREE.Mesh(geometry, materials);
+
+                                cube.objectData = {
+                                    namespace: element.namespace,
+                                    id: element.id,
+                                    isFullBlock: true
+                                };
+                            
+                                cube.position.set(element.position[0], element.position[1], element.position[2]);
+                                scene.add(cube);
+                            
+                                savedBlocks.push(cube);
+                            })
+                            .catch(error => {
+                                console.error('Error loading the model:', error);
                             });
-                            configSides.forEach(function(currentSide) {
-                                if (!sides[currentSide]) {
-                                    sides[currentSide] = "minecraft:missing";
+                        } else {
+                            fileExistence(getPath(filePath, "models", "gltf"), function(gltfModelExists) {
+                                if (gltfModelExists) {
+                                    console.log("nadnsads")
+                                    const loader = new GLTFLoader();
+                                    loader.load(getPath(filePath, "models", "gltf"), function (gltf) {
+
+                                        gltf.scene.objectData = {
+                                            namespace: element.namespace,
+                                            id: element.id,
+                                            isFullBlock: false
+                                        };
+                                        console.log("asdzasd: s")
+                                        console.log(gltf.scene.objectData)
+                                        gltf.scene.position.set(element.position[0] - 0.5,
+                                            element.position[1] - 0.5,
+                                            element.position[2] - 0.5);
+                                        scene.add(gltf.scene);
+                                        savedBlocks.push(gltf.scene);
+                                    }, undefined, function ( error ) {
+                                        console.error( error );
+                                    });
                                 } else {
-                                    fileExistence(getPath(
-                                        sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
-                                        if (!currentSideExists) {
-                                            sides[currentSide] = "minecraft:missing";
-                                        }
+                                    fileExistence(getPath(filePath, "textures"), function(textureExists) {
+                                        const texture = new THREE.TextureLoader().load(textureExists ? getPath(filePath, "textures") : "textures/minecraft/missing.png");
+                                        texture.magFilter = THREE.NearestFilter;
+                                        texture.minFilter = THREE.NearestFilter;
+                                        texture.generateMipmaps = false;
+                                        texture.wrapS = THREE.RepeatWrapping;
+                                        texture.wrapT = THREE.RepeatWrapping;
+                                        texture.repeat.set(1, 1);
+                                        texture.colorSpace = "srgb";
+                                    
+                                        const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
+                                        const geometry = new THREE.BoxGeometry(1, 1, 1);
+                                        const cube = new THREE.Mesh(geometry, material);
+                                    
+                                        // Store the namespace and id on the cube as user data
+                                        cube.objectData = {
+                                            namespace: element.namespace,
+                                            id: element.id,
+                                            isFullBlock: true
+                                        };
+                                    
+                                        cube.position.set(element.position[0], element.position[1], element.position[2]);
+                                        scene.add(cube);
+                                    
+                                        // Add the cube to the blocks array for raycasting
+                                        savedBlocks.push(cube);
                                     });
                                 }
                             });
-                            let materialsSides = {};
-                            Object.entries(sides).forEach(([key, value]) => {
-                                const sideTexture = new THREE.TextureLoader().load(getPath(
-                                    sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
-                                    "textures"));
-                                sideTexture.magFilter = THREE.NearestFilter;
-                                sideTexture.minFilter = THREE.NearestFilter;
-                                sideTexture.generateMipmaps = false;
-                                sideTexture.wrapS = THREE.RepeatWrapping;
-                                sideTexture.wrapT = THREE.RepeatWrapping;
-                                sideTexture.repeat.set(1, 1);
-                                sideTexture.colorSpace = "srgb";
-                    
-                                materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
-                            });
-                            let materials = [
-                                materialsSides["x+"],
-                                materialsSides["x-"],
-                                materialsSides["y+"],
-                                materialsSides["y-"],
-                                materialsSides["z+"],
-                                materialsSides["z-"]
-                            ];
-                            const geometry = new THREE.BoxGeometry(1, 1, 1);
-                            const cube = new THREE.Mesh(geometry, materials);
-
-                            cube.objectData = {
-                                namespace: element.namespace,
-                                id: element.id,
-                                isFullBlock: true
-                            };
-                
-                            cube.position.set(element.position[0], element.position[1], element.position[2]);
-                            scene.add(cube);
-                
-                            // Add the cube to the blocks array for raycasting
-                            savedBlocks.push(cube);
-                        })
-                        .catch(error => {
-                            console.error('Error loading the model:', error);
-                        });
-                    } else {
-                        fileExistence(getPath(filePath, "models", "gltf"), function(gltfModelExists) {
-                            if (gltfModelExists) {
-                                console.log("nadnsads")
-                                const loader = new GLTFLoader();
-                                loader.load(getPath(filePath, "models", "gltf"), function (gltf) {
-                                    console.log("nadnsads")
-                                    // Store the loaded model for later use
-                                    gltf.scene.objectData = {
-                                        namespace: element.namespace,
-                                        id: element.id,
-                                        isFullBlock: false
-                                    };
-                                    console.log("asdzasd: s")
-                                    console.log(gltf.scene.objectData)
-                                    gltf.scene.position.set(element.position[0] - 0.5,
-                                        element.position[1] - 0.5,
-                                        element.position[2] - 0.5);
-                                    scene.add(gltf.scene);
-                                    savedBlocks.push(gltf.scene);
-                                }, undefined, function ( error ) {
-                                    console.error( error );
-                                });
-                            } else {
-                                fileExistence(getPath(filePath, "textures"), function(textureExists) {
-                                    const texture = new THREE.TextureLoader().load(textureExists ? getPath(filePath, "textures") : "textures/minecraft/missing.png");
-                                    texture.magFilter = THREE.NearestFilter;
-                                    texture.minFilter = THREE.NearestFilter;
-                                    texture.generateMipmaps = false;
-                                    texture.wrapS = THREE.RepeatWrapping;
-                                    texture.wrapT = THREE.RepeatWrapping;
-                                    texture.repeat.set(1, 1);
-                                    texture.colorSpace = "srgb";
-                        
-                                    const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
-                                    const geometry = new THREE.BoxGeometry(1, 1, 1);
-                                    const cube = new THREE.Mesh(geometry, material);
-                        
-                                    // Store the namespace and id on the cube as user data
-                                    cube.objectData = {
-                                        namespace: element.namespace,
-                                        id: element.id,
-                                        isFullBlock: true
-                                    };
-                        
-                                    cube.position.set(element.position[0], element.position[1], element.position[2]);
-                                    scene.add(cube);
-                        
-                                    // Add the cube to the blocks array for raycasting
-                                    savedBlocks.push(cube);
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        });
+                        }
+                    });
+                }
+            });
+        }
     });
 }
 
@@ -410,12 +425,26 @@ function handleFile(file) {
                 console.log(data.value.size.value.value)
                 let blocks = []
                 data.value.blocks.value.value.forEach(function(element) {
-                    const block = {
-                        namespace: element.nbt.value.id.value.split(":")[0],
-                        id: element.nbt.value.id.value.split(":")[1],
-                        position: element.pos.value.value
+                    console.log("d")
+                    if (element.nbt != undefined) {
+                        console.log("b")
+                        const block = {
+                            namespace: element.nbt.value.id.value.split(":")[0],
+                            id: element.nbt.value.id.value.split(":")[1],
+                            position: element.pos.value.value,
+                            state: element.state.value
+                        }
+                        blocks.push(block)
+                    } else {
+                        console.log("a")
+                        const block = {
+                            namespace: "minecraft",
+                            id: "air",
+                            position: element.pos.value.value
+                        }
+                        console.log("a")
+                        blocks.push(block)
                     }
-                    blocks.push(block)
                 });
                 console.log(blocks)
 
@@ -453,6 +482,13 @@ function getObjectData(object) {
     return object ? object : null; // Return found data or null if none exists
 }
 
+function getPosition(object) {
+    while (object && !object.position) {
+        object = object.parent; // Move up the hierarchy
+    }
+    return object ? object.position : null; // Return found data or null if none exists
+}
+
 const raycaster = new THREE.Raycaster();
 
 let currentSelection;
@@ -483,7 +519,7 @@ document.addEventListener('mousedown', (event) => {
     if (intersects.length > 0) {
         // Get the first intersected object
         const object = intersects[0].object;
-
+        
         // Access the namespace and id from the object
         const objectCube = getObjectData(object);
         let objectData = {};
@@ -491,8 +527,26 @@ document.addEventListener('mousedown', (event) => {
             objectData.namespace = objectCube.objectData.namespace;
             objectData.id = objectCube.objectData.id;
             objectData.isFullBlock = objectCube.objectData.isFullBlock;
+            if (objectData.isFullBlock) {
+                objectData.position = objectCube.position;
+            } else {
+                objectData.position = object.parent.parent.position
+            }
+        } else {
+            console.error("No object data found.")
         }
-        currentSelection = object
+        currentSelection = object;
+        let objectPos = [];
+        console.log(object);
+        console.log(objectData);
+        console.log(objectData.position);
+        if (!objectData.isFullBlock) {
+            objectPos.push((objectData.position.x + 0.5));
+            objectPos.push((objectData.position.y + 0.5));
+            objectPos.push((objectData.position.z + 0.5));
+        } else {
+            objectPos = objectCube.position.toArray();
+        }
         if (getLang(objectData.namespace + "." + objectData.id)
             == objectData.namespace + "." + objectData.id) {
             document.querySelector('#tooltip #block').innerHTML = objectData.namespace + ":" + objectData.id;
@@ -508,7 +562,7 @@ document.addEventListener('mousedown', (event) => {
                 document.querySelector('#tooltip #namespace').innerHTML = getLang(objectData.namespace);
             }
         }
-        document.querySelector('#tooltip #position').innerHTML = objectCube.position.toArray().join(", ");
+        document.querySelector('#tooltip #position').innerHTML = objectPos.join(", ");
         document.querySelector('#tooltip').style.opacity = 0.9;
         document.querySelector('#tooltip').style.opacity = 0.9;
         document.querySelector('#tooltip').style.opacity = 0.9;
