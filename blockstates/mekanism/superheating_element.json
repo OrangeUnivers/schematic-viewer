@@ -1,0 +1,14 @@
+{
+    "default": {
+        "type": "texture",
+        "src": "mekanism/superheating_element"
+    },
+    "active=false": {
+        "type": "texture",
+        "src": "mekanism/superheating_element"
+    },
+    "active=true": {
+        "type": "texture",
+        "src": "mekanism/superheating_element_on"
+    }
+}

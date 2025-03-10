@@ -1,0 +1,14 @@
+{
+    "default": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_port_output"
+    },
+    "active=false": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_port_output"
+    },
+    "active=true": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_port"
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "default": {
+        "type": "texture",
+        "src": "mekanism/boiler_valve_input"
+    },
+    "mode=input": {
+        "type": "texture",
+        "src": "mekanism/boiler_valve_input"
+    },
+    "mode=output_steam": {
+        "type": "texture",
+        "src": "mekanism/boiler_valve_output_steam"
+    },
+    "mode=output_coolant": {
+        "type": "texture",
+        "src": "mekanism/boiler_valve_output_coolant"
+    }
+}

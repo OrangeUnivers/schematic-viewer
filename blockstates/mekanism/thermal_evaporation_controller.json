@@ -1,0 +1,44 @@
+{
+    "default": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller"
+    },
+    "active=false,facing=north": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller"
+    },
+    "active=false,facing=east": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller",
+        "y": 90
+    },
+    "active=false,facing=south": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller",
+        "y": 160
+    },
+    "active=false,facing=west": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller",
+        "y": 270
+    },
+    "active=true,facing=north": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller_on"
+    },
+    "active=true,facing=east": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller_on",
+        "y": 90
+    },
+    "active=true,facing=south": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller_on",
+        "y": 180
+    },
+    "active=true,facing=west": {
+        "type": "model",
+        "src": "mekanism/thermal_evaporation_controller_on",
+        "y": 270
+    }
+}

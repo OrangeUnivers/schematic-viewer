@@ -1,0 +1,38 @@
+{
+    "default": {
+        "type": "gltf",
+        "src": "mekanism/supercharged_coil"
+    },
+    "facing=up": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil"
+    },
+    "facing=down": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil",
+        "x":180
+    },
+    "facing=north": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil",
+        "x":-90,
+        "y":180
+    },
+    "facing=south": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil",
+        "x":-90
+    },
+    "facing=east": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil",
+        "x":-90,
+        "y":-90
+    },
+    "facing=west": {
+        "type": "gltf",
+        "src":"mekanism/supercharged_coil",
+        "x":-90,
+        "y":90
+    }
+}

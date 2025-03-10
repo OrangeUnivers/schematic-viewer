@@ -1,0 +1,4 @@
+{
+    "all": "mekanism:thermal_evaporation_block",
+    "front": "mekanism:thermal_evaporation_controller_on"
+}

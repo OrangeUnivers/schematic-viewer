@@ -1,0 +1,14 @@
+{
+    "default": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_controller"
+    },
+    "active=false": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_controller"
+    },
+    "active=true": {
+        "type": "texture",
+        "src": "mekanismgenerators/reactor_controller_on"
+    }
+}

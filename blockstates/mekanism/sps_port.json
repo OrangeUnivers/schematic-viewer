@@ -1,0 +1,14 @@
+{
+    "default": {
+        "type": "texture",
+        "src": "mekanism/sps_port"
+    },
+    "active=false": {
+        "type": "texture",
+        "src": "mekanism/sps_port"
+    },
+    "active=true": {
+        "type": "texture",
+        "src": "mekanism/sps_port_output"
+    }
+}
