@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 import WebGL from 'three/addons/capabilities/WebGL.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-// import { OutlinePass } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/OutlinePass.js';
-// import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/EffectComposer.js';
-// import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/RenderPass.js';
+import { OutlinePass } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/OutlinePass.js';
+import { EffectComposer } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/RenderPass.js';
+import { OutputPass } from 'https://cdn.jsdelivr.net/npm/three@0.173.0/examples/jsm/postprocessing/OutputPass.js';
 
 let langFile = {};
 
 let examples = [
     {
         "name": "Industrial Turbine",
-        "id": "industrial_turbine_5x5x9"
+        "id": "industrial_turbine_5x5x9",
+        "amount": 2
     },
     {
         "name": "Fusion Reactor",
@@ -30,15 +32,19 @@ let examples = [
     }
 ]
 
+// Add examples to examples window
 examples.forEach(function(example) {
     let currentExample = document.createElement("example");
     currentExample.textContent = example.name;
     currentExample.onclick = function() {
+        document.querySelector('#fileExamples').style.opacity = 0;
+        document.querySelector('#fileExamples').style.display = "none";
         loadExample(example.id);
     };
     document.getElementById('fileExampleList').appendChild(currentExample);
 });
 
+// Get english lang file
 fetch('lang/en.lang')
     .then(response => response.text())
     .then(data => {
@@ -48,6 +54,7 @@ fetch('lang/en.lang')
         console.error('Error loading the file:', error);
     });
 
+// Get lang
 function getLang(key, lang = "en") {
     const index = langFile[lang].indexOf(key + "=");
     if (index !== -1) {
@@ -64,58 +71,60 @@ function getLang(key, lang = "en") {
     return key; // Return the key if not found
 }
 
-var dropZone = document.getElementById('dropzone');
+// Handle dropping files
+    var dropZone = document.getElementById('dropzone');
 
-function showDropZone() {
-	dropZone.style.display = "block";
-	dropZone.style.opacity = 1;
-    document.getElementById('manualFileInput').style.color = "#555555"
-}
-function hideDropZone() {
-	dropZone.style.opacity = 0;
-    document.getElementById('manualFileInput').style.color = "#AAAAAA"
-    setTimeout(function(){
-        dropZone.style.display = "none";
-    }, 3000);
-}
+    function showDropZone() {
+    	dropZone.style.display = "block";
+    	dropZone.style.opacity = 1;
+        document.getElementById('manualFileInput').style.color = "#555555"
+    }
+    function hideDropZone() {
+    	dropZone.style.opacity = 0;
+        document.getElementById('manualFileInput').style.color = "#AAAAAA"
+        setTimeout(function(){
+            dropZone.style.display = "none";
+        }, 3000);
+    }
 
-function allowDrag(e) {
-    if (true) {  // Test that the item being dragged is a valid one
-        e.dataTransfer.dropEffect = 'copy';
+    function allowDrag(e) {
+        if (true) {  // Test that the item being dragged is a valid one
+            e.dataTransfer.dropEffect = 'copy';
+            e.preventDefault();
+        }
+    }
+
+    function handleDrop(e) {
         e.preventDefault();
+        hideDropZone();
+        const files = e.dataTransfer.files;
+
+        if (files.length > 0) {
+            const file = files[0];
+            handleFile(file)
+        } else {
+            alert("No file detected!");
+        }
     }
-}
 
-function handleDrop(e) {
-    e.preventDefault();
-    hideDropZone();
-    const files = e.dataTransfer.files;
-    
-    if (files.length > 0) {
-        const file = files[0];
-        handleFile(file)
-    } else {
-        alert("No file detected!");
-    }
-}
+    // 1
+    window.addEventListener('dragenter', function(e) {
+        showDropZone();
+    });
 
-// 1
-window.addEventListener('dragenter', function(e) {
-    showDropZone();
-});
+    // 2
+    dropZone.addEventListener('dragenter', allowDrag);
+    dropZone.addEventListener('dragover', allowDrag);
 
-// 2
-dropZone.addEventListener('dragenter', allowDrag);
-dropZone.addEventListener('dragover', allowDrag);
+    // 3
+    dropZone.addEventListener('dragleave', function(e) {
+        hideDropZone();
+    });
 
-// 3
-dropZone.addEventListener('dragleave', function(e) {
-    hideDropZone();
-});
+    // 4
+    dropZone.addEventListener('drop', handleDrop);
 
-// 4
-dropZone.addEventListener('drop', handleDrop);
-
+// Check file existence
 function fileExistence(filePath, callback) {
     try {
         var http = new XMLHttpRequest();
@@ -142,6 +151,7 @@ function fileExistence(filePath, callback) {
         callback(false);
     }
 }
+
 const scene = new THREE.Scene();
 const blockDisplay = new THREE.Scene();
 // Create Orthographic Camera
@@ -172,24 +182,42 @@ blockDisplayCamera.lookAt(0, 0, 0); // Look at the center
 
 const light = new THREE.AmbientLight(0xffffff, 2);
 scene.add(light);
-const blockDisplayLight = new THREE.AmbientLight(0xffffff, 2);
+const blockDisplayLight = new THREE.AmbientLight(0xffffff, 1);
 blockDisplayLight.position.set(10, 10, 10); // Start at an angle
 blockDisplay.add(blockDisplayLight);
 
 // Set up the renderer
 const renderer = new THREE.WebGLRenderer( {antialias: true} );
-renderer.setClearColor(0x222222, 1);
+renderer.setClearColor(0x080808, 1);
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize( window.innerWidth, window.innerHeight );
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
 document.body.appendChild( renderer.domElement );
 
 const blockDisplayRenderer = new THREE.WebGLRenderer( {canvas: document.getElementById("blockDisplayCanvas"), antialias: true} );
 blockDisplayRenderer.setClearColor(0xFFFFFF, 0);
 blockDisplayRenderer.setSize( 100, 100 );
 
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+const outlinePass = new OutlinePass(new THREE.Vector2(window.innerWidth, window.innerHeight), scene, camera);
+outlinePass.selectedObjects = []; // objects to outline
+outlinePass.visibleEdgeColor.set('#ffffff');
+outlinePass.hiddenEdgeColor.set('#424242');
+// outlinePass.edgeStrength = 2;
+// outlinePass.edgeGlow = 0;
+// outlinePass.edgeThickness = 1;
+// outlinePass.pulsePeriod = 0;
+composer.addPass(outlinePass);
+composer.addPass(new OutputPass);
+
 // Store blocks for raycasting
 let savedBlocks = [];
 
-function getPath(path, type="textures", variiation="model") {
+function getPathSelfVersion(path, type="textures", variiation="model") {
     switch (type) {
         case "textures":
             return "textures/" + path + ".png";
@@ -204,18 +232,36 @@ function getPath(path, type="textures", variiation="model") {
     }
 }
 
+function getPath(textureId, type="textures") {
+    switch (type) {
+        case "textures":
+            return "textures/" + path + ".png";
+        case "models":
+            return "models/" + path + ".json";
+        case "states":
+            return "blockstates/" + path + ".json";
+    }
+}
+
 document.getElementById("seeExamples").addEventListener('click', function(event) {
     document.getElementById("fileExamples").style.display = "flex";
     setTimeout(function() {
         document.getElementById("fileExamples").style.opacity = 1;
-    }, 100)
+    }, 10)
 })
 
 document.getElementById("fileExampleClose").addEventListener('click', function(event) {
     document.querySelector('#fileExamples').style.opacity = 0;
     setTimeout(function(){
         document.querySelector('#fileExamples').style.display = "none";
-    }, 3000);
+    }, 500);
+})
+
+document.getElementById("modManagementClose").addEventListener('click', function(event) {
+    document.querySelector('#modManagement').style.opacity = 0;
+    setTimeout(function(){
+        document.querySelector('#modManagement').style.display = "none";
+    }, 500);
 })
 
 function getNbt(object, name) {
@@ -228,378 +274,394 @@ function calculateRotation(angle) {
     return (Math.PI / 180) * angle;
 }
 
+function addBlockToScene(block, palette) {
 
-function constructScene(blocksData, palette) {
-    blocksData.forEach(function(element) {
-        let fullName = element.namespace + ":" + element.id;
-        let blockPalette;
-        if (palette[element.state] != undefined) {
-            blockPalette = palette[element.state];
-        } else {
-            blockPalette = {};
-        }
-        if (fullName != "minecraft:air") {
-            const filePath = element.namespace + "/" + element.id;
-            fileExistence(getPath(filePath, "states"), function(stateExists) {
-                if (stateExists) {
-                    fetch(getPath(filePath, "states"))
-                    .then(response => response.text())
-                    .then(data => {
-                        Object.entries(JSON.parse(data)).forEach(([key, value]) => {
-                            if (key != "default") {
-                                if (blockPalette[key.split("=")[0]] != undefined) {
-                                    let acceptedParams = true;
-                                    key.split(",").forEach((param) => {
-                                        if (param.split("=")[1] != blockPalette[param.split("=")[0]]) {
-                                            acceptedParams = false;
-                                        }
-                                    });
-                                    if (acceptedParams) {
-                                        switch(value.type) {
-                                            case "texture":
-                                                fileExistence(getPath(value.src, "textures"), function(textureExists) {
-                                                    const texture = new THREE.TextureLoader().load(textureExists ? getPath(value.src, "textures") : "textures/minecraft/missing.png");
-                                                    texture.magFilter = THREE.NearestFilter;
-                                                    texture.minFilter = THREE.NearestFilter;
-                                                    texture.generateMipmaps = false;
-                                                    texture.wrapS = THREE.RepeatWrapping;
-                                                    texture.wrapT = THREE.RepeatWrapping;
-                                                    texture.repeat.set(1, 1);
-                                                    texture.colorSpace = "srgb";
-                                                
-                                                    const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
-                                                    const geometry = new THREE.BoxGeometry(1, 1, 1);
-                                                    const cube = new THREE.Mesh(geometry, material);
-                                                
-                                                    // Store the namespace and id on the cube as user data
-                                                    cube.objectData = {
-                                                        namespace: element.namespace,
-                                                        id: element.id,
-                                                        isFullBlock: true
-                                                    };
-                                                
-                                                    cube.position.set(element.position[0], element.position[1], element.position[2]);
-                                                    scene.add(cube);
-                                                
-                                                    // Add the cube to the blocks array for raycasting
-                                                    savedBlocks.push(cube);
-                                                });
-                                                break;
-                                            case "model":
-                                                fileExistence(getPath(value.src, "models"), function(modelExists) {
-                                                    if (modelExists) {
-                                                        fetch(getPath(value.src, "models"))
-                                                        .then(response => response.text())
-                                                        .then(data => {
-                                                            let sides = {}
-                                                            const configSides = [
-                                                                "x+", "x-",
-                                                                "y+", "y-",
-                                                                "z+", "z-"
-                                                            ]
-                                                            Object.entries(JSON.parse(data)).forEach(([key, value]) => {
-                                                                switch(key) {
-                                                                    case "all":
-                                                                        sides["x+"] = value;
-                                                                        sides["x-"] = value;
-                                                                        sides["y+"] = value;
-                                                                        sides["y-"] = value;
-                                                                        sides["z+"] = value;
-                                                                        sides["z-"] = value;
-                                                                        break;
-                                                                    case "end":
-                                                                        sides["y+"] = value;
-                                                                        sides["y-"] = value;
-                                                                        break;
-                                                                    case "side":
-                                                                        sides["x+"] = value;
-                                                                        sides["x-"] = value;
-                                                                        sides["z+"] = value;
-                                                                        sides["z-"] = value;
-                                                                        break;
-                                                                    case "top":
-                                                                        sides["y+"] = value;
-                                                                        break;
-                                                                    case "bottom":
-                                                                        sides["y-"] = value;
-                                                                        break;
-                                                                    case "back":
-                                                                        sides["z+"] = value;
-                                                                        break;
-                                                                    case "front":
-                                                                        sides["z-"] = value;
-                                                                        break;
-                                                                    case "left":
-                                                                        sides["x+"] = value;
-                                                                        break;
-                                                                    case "right":
-                                                                        sides["x-"] = value;
-                                                                        break;
-                                                                }
-                                                            });
-                                                            configSides.forEach(function(currentSide) {
-                                                                if (!sides[currentSide]) {
-                                                                    sides[currentSide] = "minecraft:missing";
-                                                                } else {
-                                                                    fileExistence(getPath(
-                                                                        sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
-                                                                        if (!currentSideExists) {
-                                                                            sides[currentSide] = "minecraft:missing";
-                                                                        }
-                                                                    });
-                                                                }
-                                                            });
-                                                            let materialsSides = {};
-                                                            Object.entries(sides).forEach(([key, value]) => {
-                                                                const sideTexture = new THREE.TextureLoader().load(getPath(
-                                                                    sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
-                                                                    "textures"));
-                                                                sideTexture.magFilter = THREE.NearestFilter;
-                                                                sideTexture.minFilter = THREE.NearestFilter;
-                                                                sideTexture.generateMipmaps = false;
-                                                                sideTexture.wrapS = THREE.RepeatWrapping;
-                                                                sideTexture.wrapT = THREE.RepeatWrapping;
-                                                                sideTexture.repeat.set(1, 1);
-                                                                sideTexture.colorSpace = "srgb";
-                                                                
-                                                                materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
-                                                            });
-                                                            let materials = [
-                                                                materialsSides["x+"],
-                                                                materialsSides["x-"],
-                                                                materialsSides["y+"],
-                                                                materialsSides["y-"],
-                                                                materialsSides["z+"],
-                                                                materialsSides["z-"]
-                                                            ];
-                                                            const geometry = new THREE.BoxGeometry(1, 1, 1);
-                                                            const cube = new THREE.Mesh(geometry, materials);
-                            
-                                                            cube.objectData = {
-                                                                namespace: element.namespace,
-                                                                id: element.id,
-                                                                isFullBlock: true
-                                                            };
-                                                        
-                                                            cube.position.set(element.position[0], element.position[1], element.position[2]);
-                                                            if (value.y != undefined) {
-                                                                cube.rotation.y = calculateRotation(value.y);
+}
+
+function addBlockToSceneSelfVersion(element, palette) {
+    let fullName = element.namespace + ":" + element.id;
+    let blockPalette = {};
+    if (palette[element.state] != undefined) {
+        blockPalette = palette[element.state];
+    }
+    if (fullName != "minecraft:air") {
+        const filePath = element.namespace + "/" + element.id;
+        fileExistence(getPathSelfVersion(filePath, "states"), function(stateExists) {
+            if (stateExists) {
+                fetch(getPathSelfVersion(filePath, "states"))
+                .then(response => response.text())
+                .then(data => {
+                    Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+                        if (key != "default") {
+                            if (blockPalette[key.split("=")[0]] != undefined) {
+                                let acceptedParams = true;
+                                key.split(",").forEach((param) => {
+                                    if (param.split("=")[1] != blockPalette[param.split("=")[0]]) {
+                                        acceptedParams = false;
+                                    }
+                                });
+                                if (acceptedParams) {
+                                    switch(value.type) {
+                                        case "texture":
+                                            fileExistence(getPathSelfVersion(value.src, "textures"), function(textureExists) {
+                                                const texture = new THREE.TextureLoader().load(textureExists ? getPathSelfVersion(value.src, "textures") : "textures/minecraft/missing.png");
+                                                texture.magFilter = THREE.NearestFilter;
+                                                texture.minFilter = THREE.NearestFilter;
+                                                texture.generateMipmaps = false;
+                                                texture.wrapS = THREE.RepeatWrapping;
+                                                texture.wrapT = THREE.RepeatWrapping;
+                                                texture.repeat.set(1, 1);
+                                                texture.colorSpace = "srgb";
+                                            
+                                                const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
+                                                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                                                const cube = new THREE.Mesh(geometry, material);
+                                            
+                                                // Store the namespace and id on the cube as user data
+                                                cube.objectData = {
+                                                    namespace: element.namespace,
+                                                    id: element.id,
+                                                    isFullBlock: true
+                                                };
+                                            
+                                                cube.position.set(element.position[0], element.position[1], element.position[2]);
+                                                scene.add(cube);
+                                            
+                                                // Add the cube to the blocks array for raycasting
+                                                savedBlocks.push(cube);
+                                            });
+                                            break;
+                                        case "model":
+                                            fileExistence(getPathSelfVersion(value.src, "models"), function(modelExists) {
+                                                if (modelExists) {
+                                                    fetch(getPathSelfVersion(value.src, "models"))
+                                                    .then(response => response.text())
+                                                    .then(data => {
+                                                        let sides = {}
+                                                        const configSides = [
+                                                            "x+", "x-",
+                                                            "y+", "y-",
+                                                            "z+", "z-"
+                                                        ]
+                                                        Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+                                                            switch(key) {
+                                                                case "all":
+                                                                    sides["x+"] = value;
+                                                                    sides["x-"] = value;
+                                                                    sides["y+"] = value;
+                                                                    sides["y-"] = value;
+                                                                    sides["z+"] = value;
+                                                                    sides["z-"] = value;
+                                                                    break;
+                                                                case "end":
+                                                                    sides["y+"] = value;
+                                                                    sides["y-"] = value;
+                                                                    break;
+                                                                case "side":
+                                                                    sides["x+"] = value;
+                                                                    sides["x-"] = value;
+                                                                    sides["z+"] = value;
+                                                                    sides["z-"] = value;
+                                                                    break;
+                                                                case "top":
+                                                                    sides["y+"] = value;
+                                                                    break;
+                                                                case "bottom":
+                                                                    sides["y-"] = value;
+                                                                    break;
+                                                                case "back":
+                                                                    sides["z+"] = value;
+                                                                    break;
+                                                                case "front":
+                                                                    sides["z-"] = value;
+                                                                    break;
+                                                                case "left":
+                                                                    sides["x+"] = value;
+                                                                    break;
+                                                                case "right":
+                                                                    sides["x-"] = value;
+                                                                    break;
                                                             }
-                                                            if (value.x != undefined) {
-                                                                cube.rotation.xy = calculateRotation(value.x);
-                                                            }
-                                                            if (value.z != undefined) {
-                                                                cube.rotation.xy = calculateRotation(value.z);
-                                                            }
-                                                            scene.add(cube);
-                                                        
-                                                            savedBlocks.push(cube);
-                                                        })
-                                                        .catch(error => {
-                                                            console.error('Error loading the model:', error);
                                                         });
-                                                    }
-                                                });
-                                                break;
-                                            case "gltf":
-                                                fileExistence(getPath(filePath, "models", "gltf"), function(gltfModelExists) {
-                                                    if (gltfModelExists) {
-                                                        const loader = new GLTFLoader();
-                                                        loader.load(getPath(filePath, "models", "gltf"), function (gltf) {
-                    
-                                                            gltf.scene.objectData = {
-                                                                namespace: element.namespace,
-                                                                id: element.id,
-                                                                isFullBlock: false
-                                                            };
-                                                            gltf.scene.position.set(element.position[0] - 0.5,
-                                                                element.position[1] - 0.5,
-                                                                element.position[2] - 0.5);
-                                                            if (value.y != undefined) {
-                                                                gltf.scene.rotation.y = calculateRotation(value.y);
+                                                        configSides.forEach(function(currentSide) {
+                                                            if (!sides[currentSide]) {
+                                                                sides[currentSide] = "minecraft:missing";
+                                                            } else {
+                                                                fileExistence(getPathSelfVersion(
+                                                                    sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
+                                                                    if (!currentSideExists) {
+                                                                        sides[currentSide] = "minecraft:missing";
+                                                                    }
+                                                                });
                                                             }
-                                                            if (value.x != undefined) {
-                                                                gltf.scene.rotation.xy = calculateRotation(value.x);
-                                                            }
-                                                            if (value.z != undefined) {
-                                                                gltf.scene.rotation.xy = calculateRotation(value.z);
-                                                            }
-                                                            scene.add(gltf.scene);
-                                                            savedBlocks.push(gltf.scene);
-                                                        }, undefined, function ( error ) {
-                                                            console.error( error );
                                                         });
-                                                    }
-                                                });
-                                                break;
-                                        }
+                                                        let materialsSides = {};
+                                                        Object.entries(sides).forEach(([key, value]) => {
+                                                            const sideTexture = new THREE.TextureLoader().load(getPathSelfVersion(
+                                                                sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
+                                                                "textures"));
+                                                            sideTexture.magFilter = THREE.NearestFilter;
+                                                            sideTexture.minFilter = THREE.NearestFilter;
+                                                            sideTexture.generateMipmaps = false;
+                                                            sideTexture.wrapS = THREE.RepeatWrapping;
+                                                            sideTexture.wrapT = THREE.RepeatWrapping;
+                                                            sideTexture.repeat.set(1, 1);
+                                                            sideTexture.colorSpace = "srgb";
+                                                            
+                                                            materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
+                                                        });
+                                                        let materials = [
+                                                            materialsSides["x+"],
+                                                            materialsSides["x-"],
+                                                            materialsSides["y+"],
+                                                            materialsSides["y-"],
+                                                            materialsSides["z+"],
+                                                            materialsSides["z-"]
+                                                        ];
+                                                        const geometry = new THREE.BoxGeometry(1, 1, 1);
+                                                        const cube = new THREE.Mesh(geometry, materials);
+                        
+                                                        cube.objectData = {
+                                                            namespace: element.namespace,
+                                                            id: element.id,
+                                                            isFullBlock: true
+                                                        };
+                                                    
+                                                        cube.position.set(element.position[0], element.position[1], element.position[2]);
+                                                        if (value.y != undefined) {
+                                                            cube.rotation.y = calculateRotation(value.y);
+                                                        }
+                                                        if (value.x != undefined) {
+                                                            cube.rotation.xy = calculateRotation(value.x);
+                                                        }
+                                                        if (value.z != undefined) {
+                                                            cube.rotation.xy = calculateRotation(value.z);
+                                                        }
+                                                        scene.add(cube);
+                                                    
+                                                        savedBlocks.push(cube);
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Error loading the model:', error);
+                                                    });
+                                                }
+                                            });
+                                            break;
+                                        case "gltf":
+                                            fileExistence(getPathSelfVersion(filePath, "models", "gltf"), function(gltfModelExists) {
+                                                if (gltfModelExists) {
+                                                    const loader = new GLTFLoader();
+                                                    loader.load(getPathSelfVersion(filePath, "models", "gltf"), function (gltf) {
+                
+                                                        gltf.scene.objectData = {
+                                                            namespace: element.namespace,
+                                                            id: element.id,
+                                                            isFullBlock: false
+                                                        };
+                                                        gltf.scene.position.set(element.position[0] - 0.5,
+                                                            element.position[1] - 0.5,
+                                                            element.position[2] - 0.5);
+                                                        if (value.y != undefined) {
+                                                            gltf.scene.rotation.y = calculateRotation(value.y);
+                                                        }
+                                                        if (value.x != undefined) {
+                                                            gltf.scene.rotation.xy = calculateRotation(value.x);
+                                                        }
+                                                        if (value.z != undefined) {
+                                                            gltf.scene.rotation.xy = calculateRotation(value.z);
+                                                        }
+                                                        scene.add(gltf.scene);
+                                                        savedBlocks.push(gltf.scene);
+                                                    }, undefined, function ( error ) {
+                                                        console.error( error );
+                                                    });
+                                                }
+                                            });
+                                            break;
                                     }
                                 }
                             }
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error loading the blockstate:', error);
+                        }
                     });
-                } else {
-                    fileExistence(getPath(filePath, "models"), function(modelExists) {
-                        if (modelExists) {
-                            fetch(getPath(filePath, "models"))
-                            .then(response => response.text())
-                            .then(data => {
-                                let sides = {}
-                                const configSides = [
-                                    "x+", "x-",
-                                    "y+", "y-",
-                                    "z+", "z-"
-                                ]
-                                Object.entries(JSON.parse(data)).forEach(([key, value]) => {
-                                    switch(key) {
-                                        case "all":
-                                            sides["x+"] = value;
-                                            sides["x-"] = value;
-                                            sides["y+"] = value;
-                                            sides["y-"] = value;
-                                            sides["z+"] = value;
-                                            sides["z-"] = value;
-                                            break;
-                                        case "end":
-                                            sides["y+"] = value;
-                                            sides["y-"] = value;
-                                            break;
-                                        case "side":
-                                            sides["x+"] = value;
-                                            sides["x-"] = value;
-                                            sides["z+"] = value;
-                                            sides["z-"] = value;
-                                            break;
-                                        case "top":
-                                            sides["y+"] = value;
-                                            break;
-                                        case "bottom":
-                                            sides["y-"] = value;
-                                            break;
-                                        case "back":
-                                            sides["z+"] = value;
-                                            break;
-                                        case "front":
-                                            sides["z-"] = value;
-                                            break;
-                                        case "left":
-                                            sides["x+"] = value;
-                                            break;
-                                        case "right":
-                                            sides["x-"] = value;
-                                            break;
-                                    }
+                })
+                .catch(error => {
+                    console.error('Error loading the blockstate:', error);
+                });
+            } else {
+                fileExistence(getPathSelfVersion(filePath, "models"), function(modelExists) {
+                    if (modelExists) {
+                        fetch(getPathSelfVersion(filePath, "models"))
+                        .then(response => response.text())
+                        .then(data => {
+                            let sides = {}
+                            const configSides = [
+                                "x+", "x-",
+                                "y+", "y-",
+                                "z+", "z-"
+                            ]
+                            Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+                                let sidesToAdd = [];
+                                switch(key) {
+                                    case "all":
+                                        sidesToAdd.push("x+", "x-", "y+", "y-", "z+", "z-");
+                                        break;
+                                    case "end":
+                                        sidesToAdd.push("y+", "y-");
+                                        break;
+                                    case "side":
+                                        sidesToAdd.push("x+", "x-", "z+", "z-");
+                                        break;
+                                    case "top":
+                                        sidesToAdd.push("y+");
+                                        break;
+                                    case "bottom":
+                                        sidesToAdd.push("y-");
+                                        break;
+                                    case "back":
+                                        sidesToAdd.push("z+");
+                                        break;
+                                    case "front":
+                                        sidesToAdd.push("z-");
+                                        break;
+                                    case "left":
+                                        sidesToAdd.push("x+");
+                                        break;
+                                    case "right":
+                                        sidesToAdd.push("x-");
+                                        break;
+                                }
+                                sidesToAdd.forEach(side => {
+                                    sides[side] = value;
                                 });
-                                configSides.forEach(function(currentSide) {
-                                    if (!sides[currentSide]) {
-                                        sides[currentSide] = "minecraft:missing";
-                                    } else {
-                                        fileExistence(getPath(
-                                            sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
-                                            if (!currentSideExists) {
-                                                sides[currentSide] = "minecraft:missing";
-                                            }
-                                        });
-                                    }
-                                });
-                                let materialsSides = {};
-                                Object.entries(sides).forEach(([key, value]) => {
-                                    const sideTexture = new THREE.TextureLoader().load(getPath(
-                                        sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
-                                        "textures"));
-                                    sideTexture.magFilter = THREE.NearestFilter;
-                                    sideTexture.minFilter = THREE.NearestFilter;
-                                    sideTexture.generateMipmaps = false;
-                                    sideTexture.wrapS = THREE.RepeatWrapping;
-                                    sideTexture.wrapT = THREE.RepeatWrapping;
-                                    sideTexture.repeat.set(1, 1);
-                                    sideTexture.colorSpace = "srgb";
-                                    
-                                    materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
-                                });
-                                let materials = [
-                                    materialsSides["x+"],
-                                    materialsSides["x-"],
-                                    materialsSides["y+"],
-                                    materialsSides["y-"],
-                                    materialsSides["z+"],
-                                    materialsSides["z-"]
-                                ];
-                                const geometry = new THREE.BoxGeometry(1, 1, 1);
-                                const cube = new THREE.Mesh(geometry, materials);
-
-                                cube.objectData = {
-                                    namespace: element.namespace,
-                                    id: element.id,
-                                    isFullBlock: true
-                                };
-                            
-                                cube.position.set(element.position[0], element.position[1], element.position[2]);
-                                scene.add(cube);
-                            
-                                savedBlocks.push(cube);
-                            })
-                            .catch(error => {
-                                console.error('Error loading the model:', error);
                             });
-                        } else {
-                            fileExistence(getPath(filePath, "models", "gltf"), function(gltfModelExists) {
-                                if (gltfModelExists) {
-                                    const loader = new GLTFLoader();
-                                    loader.load(getPath(filePath, "models", "gltf"), function (gltf) {
-
-                                        gltf.scene.objectData = {
-                                            namespace: element.namespace,
-                                            id: element.id,
-                                            isFullBlock: false
-                                        };
-                                        gltf.scene.position.set(element.position[0] - 0.5,
-                                            element.position[1] - 0.5,
-                                            element.position[2] - 0.5);
-                                        scene.add(gltf.scene);
-                                        savedBlocks.push(gltf.scene);
-                                    }, undefined, function ( error ) {
-                                        console.error( error );
-                                    });
+                            configSides.forEach(function(currentSide) {
+                                if (!sides[currentSide]) {
+                                    sides[currentSide] = "minecraft:missing";
                                 } else {
-                                    fileExistence(getPath(filePath, "textures"), function(textureExists) {
-                                        const texture = new THREE.TextureLoader().load(textureExists ? getPath(filePath, "textures") : "textures/minecraft/missing.png");
-                                        texture.magFilter = THREE.NearestFilter;
-                                        texture.minFilter = THREE.NearestFilter;
-                                        texture.generateMipmaps = false;
-                                        texture.wrapS = THREE.RepeatWrapping;
-                                        texture.wrapT = THREE.RepeatWrapping;
-                                        texture.repeat.set(1, 1);
-                                        texture.colorSpace = "srgb";
-                                    
-                                        const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
-                                        const geometry = new THREE.BoxGeometry(1, 1, 1);
-                                        const cube = new THREE.Mesh(geometry, material);
-                                    
-                                        // Store the namespace and id on the cube as user data
-                                        cube.objectData = {
-                                            namespace: element.namespace,
-                                            id: element.id,
-                                            isFullBlock: true
-                                        };
-                                    
-                                        cube.position.set(element.position[0], element.position[1], element.position[2]);
-                                        scene.add(cube);
-                                    
-                                        // Add the cube to the blocks array for raycasting
-                                        savedBlocks.push(cube);
+                                    fileExistence(getPathSelfVersion(
+                                        sides[currentSide].split(":")[0] + "/" + sides[currentSide].split(":")[1],"textures"), function(currentSideExists) {
+                                        if (!currentSideExists) {
+                                            sides[currentSide] = "minecraft:missing";
+                                        }
                                     });
                                 }
                             });
-                        }
-                    });
-                }
-            });
-        }
+                            let materialsSides = {};
+                            Object.entries(sides).forEach(([key, value]) => {
+                                const sideTexture = new THREE.TextureLoader().load(getPathSelfVersion(
+                                    sides[key].split(":")[0] + "/" + sides[key].split(":")[1],
+                                    "textures"));
+                                sideTexture.magFilter = THREE.NearestFilter;
+                                sideTexture.minFilter = THREE.NearestFilter;
+                                sideTexture.generateMipmaps = false;
+                                sideTexture.wrapS = THREE.RepeatWrapping;
+                                sideTexture.wrapT = THREE.RepeatWrapping;
+                                sideTexture.repeat.set(1, 1);
+                                sideTexture.colorSpace = "srgb";
+                                
+                                materialsSides[key] = new THREE.MeshStandardMaterial({ map: sideTexture, transparent: true });
+                            });
+                            let materials = [
+                                materialsSides["x+"],
+                                materialsSides["x-"],
+                                materialsSides["y+"],
+                                materialsSides["y-"],
+                                materialsSides["z+"],
+                                materialsSides["z-"]
+                            ];
+                            const geometry = new THREE.BoxGeometry(1, 1, 1);
+                            const cube = new THREE.Mesh(geometry, materials);
+
+                            cube.objectData = {
+                                namespace: element.namespace,
+                                id: element.id,
+                                isFullBlock: true
+                            };
+                        
+                            cube.position.set(element.position[0], element.position[1], element.position[2]);
+                            scene.add(cube);
+                        
+                            savedBlocks.push(cube);
+                        })
+                        .catch(error => {
+                            console.error('Error loading the model:', error);
+                        });
+                    } else {
+                        fileExistence(getPathSelfVersion(filePath, "models", "gltf"), function(gltfModelExists) {
+                            if (gltfModelExists) {
+                                const loader = new GLTFLoader();
+                                loader.load(getPathSelfVersion(filePath, "models", "gltf"), function (gltf) {
+
+                                    gltf.scene.objectData = {
+                                        namespace: element.namespace,
+                                        id: element.id,
+                                        isFullBlock: false
+                                    };
+                                    gltf.scene.position.set(element.position[0] - 0.5,
+                                        element.position[1] - 0.5,
+                                        element.position[2] - 0.5);
+                                    scene.add(gltf.scene);
+                                    savedBlocks.push(gltf.scene);
+                                }, undefined, function ( error ) {
+                                    console.error( error );
+                                });
+                            } else {
+                                fileExistence(getPathSelfVersion(filePath, "textures"), function(textureExists) {
+                                    const texture = new THREE.TextureLoader().load(textureExists ? getPathSelfVersion(filePath, "textures") : "textures/minecraft/missing.png");
+                                    texture.magFilter = THREE.NearestFilter;
+                                    texture.minFilter = THREE.NearestFilter;
+                                    texture.generateMipmaps = false;
+                                    texture.wrapS = THREE.RepeatWrapping;
+                                    texture.wrapT = THREE.RepeatWrapping;
+                                    texture.repeat.set(1, 1);
+                                    texture.colorSpace = "srgb";
+                                
+                                    const material = new THREE.MeshStandardMaterial({ map: texture, transparent: true });
+                                    const geometry = new THREE.BoxGeometry(1, 1, 1);
+                                    const cube = new THREE.Mesh(geometry, material);
+                                
+                                    // Store the namespace and id on the cube as user data
+                                    cube.objectData = {
+                                        namespace: element.namespace,
+                                        id: element.id,
+                                        isFullBlock: true
+                                    };
+                                
+                                    cube.position.set(element.position[0], element.position[1], element.position[2]);
+                                    scene.add(cube);
+                                
+                                    // Add the cube to the blocks array for raycasting
+                                    savedBlocks.push(cube);
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+}
+
+function constructScene(blocksData, palette) {
+    blocksData.forEach(function(element) {
+        addBlockToSceneSelfVersion(element, palette)
     });
+}
+
+function addModFiles(file) {
+    document.getElementById("modManagement").style.display = "flex";
+    setTimeout(function() {
+        document.getElementById("modManagement").style.opacity = 1;
+    }, 10)
+    let currentModElement = document.createElement("mod");
+    currentModElement.textContent = file.name;
+    document.getElementById('modList').appendChild(currentModElement);
+    
+    try {
+        output = new pako.inflate(file);
+    } catch  (err) {
+        console.log(err);  // unknown compression method
+    }
 }
 
 function handleFile(file) {
@@ -638,6 +700,7 @@ function handleFile(file) {
                     return;
                 }
                 console.log(JSON.stringify(data, null, 2))
+                console.log(data)
                 let palette = [];
                 data.value.palette.value.value.forEach(function(element) {
                     let currentPalette = {};
@@ -748,7 +811,7 @@ document.addEventListener('mousedown', (event) => {
                 objectData.position = object.parent.parent.position
             }
         } else {
-            console.error("No object data found.")
+            console.error("No object data found.");
         }
         currentSelection = object;
         let objectPos = [];
@@ -776,30 +839,35 @@ document.addEventListener('mousedown', (event) => {
         }
         document.querySelector('#tooltip #position').innerHTML = objectPos.join(", ");
         document.querySelector('#tooltip').style.opacity = 0.9;
-        document.querySelector('#tooltip').style.opacity = 0.9;
-        document.querySelector('#tooltip').style.opacity = 0.9;
         currentSelectionClone = object.clone();
         currentSelectionClone.position.set(2, 2, 2);
         currentSelectionClone.rotation.y = calculateRotation(270)
         blockDisplay.add(currentSelectionClone);
+        outlinePass.selectedObjects = [object]
         // scene.remove(object)
     } else {
         document.querySelector('#tooltip').style.opacity = 0;
+        outlinePass.selectedObjects = []
     }
 });
 
 document.querySelector('#tooltip #deletion').addEventListener('click', function(event) {
-    if (currentSelection) {
-        scene.remove(currentSelection)
-        blockDisplay.remove(currentSelectionClone)
+    outlinePass.selectedObjects = [];
+    if (void 0 !== currentSelection) {
+        scene.remove(currentSelection);
+        blockDisplay.remove(currentSelectionClone);
     }
     document.querySelector('#tooltip').style.opacity = 0;
-    currentSelection = undefined
-    currentSelectionClone = undefined
+    currentSelection = undefined;
+    currentSelectionClone = undefined;
 });
 document.getElementById('fileInput').addEventListener('change', function(event) {
-    console.log(event.target.files[0])
-    handleFile(event.target.files[0])
+    console.log(event.target.files[0]);
+    handleFile(event.target.files[0]);
+});
+
+document.getElementById('modInput').addEventListener('change', function(event) {
+    addModFiles(event.target.files[0]);
 });
 
 function loadExample(example) {
@@ -818,33 +886,126 @@ function loadExample(example) {
     
 }
 
-let moveSpeed = 0.5; // Adjust the speed of movement
+let moveSpeed = 0.05; // Adjust the speed of movement
+let modMoveSpeed = 0.15;
+
+
+let angle = 45 * Math.PI / 180;
+let rotate = false;
+let height = 20 * Math.PI / 180;
+
+let angleSpeed = 0;
+let lastEditedByFinger = false;
 
 // Listen for arrow key events to move the camera up and down
+const keys = new Set();
+
+document.addEventListener('keydown', (e) => {
+    keys.add(e.key);
+});
+
+document.addEventListener('keyup', (e) => {
+    keys.delete(e.key);
+});
 document.addEventListener('keydown', function(event) {
     if (event.key === "ArrowUp") {
-        camera.position.y += moveSpeed; // Move up
+        height = Math.max(Math.PI / -2 + 0.001, Math.min(height + moveSpeed, Math.PI / 2 - 0.001));
     } else if (event.key === "ArrowDown") {
-        camera.position.y -= moveSpeed; // Move down
+        height = Math.max(Math.PI / -2 + 0.001, Math.min(height - moveSpeed, Math.PI / 2 - 0.001));
     }
 });
 
+const pointers = new Map();
 
-let angle = 0;
-let rotate = true;
+document.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+
+    pointers.set(e.pointerId, {
+        x: e.clientX,
+        y: e.clientY
+    });
+    
+    angleSpeed = 0;
+    lastEditedByFinger = true;
+
+    document.setPointerCapture(e.pointerId);
+});
+
+document.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) return;
+
+    const p = pointers.get(e.pointerId);
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+    // -- old --
+    // y\cdot a<\left(\operatorname{abs}\left(x\right)\right)\left\{y\cdot a>-\operatorname{abs}\left(x\right)\right\}
+    // y*a<(abs(x)){y*a>-abs(x)}
+    // -- new --
+    // \operatorname{abs}\left(x\right)\cdot a<\operatorname{abs}\left(y\right)
+    // abs(x)*a<abs(y)
+    // -- new new --
+    // \operatorname{abs}\left(x\right)\cdot a<\left(\operatorname{abs}\left(y\right)\right)\left\{\operatorname{abs}\left(y\right)>b\right\}
+    // abs(x)*a<(abs(y)){abs(y)>b}
+    if (Math.abs(dx)*0.4 < Math.abs(dy)) {
+        height = Math.max(Math.PI / -2 + 0.001, Math.min(height + (dy/100), Math.PI / 2 - 0.001));
+    }
+
+    if (Math.abs(dy)*0.4 < Math.abs(dx)) {
+        angleSpeed = dx/100;
+    }
+    lastEditedByFinger = true;
+
+    p.x = e.clientX;
+    p.y = e.clientY;
+
+    // handled later
+});
+
+document.addEventListener('pointerup', release);
+document.addEventListener('pointercancel', release);
+
+function release(e) {
+    pointers.delete(e.pointerId);
+    document.releasePointerCapture(e.pointerId);
+}
+
+
 // Animation loop
-
 function blockDisplayAnimation() {
     blockDisplayRenderer.render( blockDisplay, blockDisplayCamera );
 }
 
 function animate(center) {
+    let currentMoveSpeed = moveSpeed;
+    if (keys.has("Control")) {
+        currentMoveSpeed = modMoveSpeed;
+    }
+    if (keys.has("ArrowUp")) {
+        height = Math.max(Math.PI / -2 + 0.001, Math.min(height + currentMoveSpeed, Math.PI / 2 - 0.001));
+    }
+    if (keys.has("ArrowDown")) {
+        height = Math.max(Math.PI / -2 + 0.001, Math.min(height - currentMoveSpeed, Math.PI / 2 - 0.001));
+    }
+    if (keys.has("ArrowLeft")) {
+        angle += currentMoveSpeed;
+    }
+    if (keys.has("ArrowRight")) {
+        angle -= currentMoveSpeed;
+    }
+    if (keys.has("ArrowLeft") || keys.has("ArrowRight")) {
+        angleSpeed = 0;
+        lastEditedByFinger = false;
+    }
     const radius = 10;
-    angle += (rotate ? 0.01 : 0);
-    camera.position.x = center[0] + Math.cos(angle) * radius;
-    camera.position.z = center[2] + Math.sin(angle) * radius;
-    camera.lookAt(center[0], center[1], center[2]);
-    renderer.render( scene, camera );
+    angle += ((rotate && !keys.has("ArrowLeft") && !keys.has("ArrowRight")) ? 0.01 : 0);
+    angle += angleSpeed;
+    angleSpeed = Math.abs(angleSpeed) > 0.001 && (!lastEditedByFinger || Math.abs(angleSpeed) > 0.1) ? angleSpeed * 0.99: 0;
+    lastEditedByFinger = false;
+    // camera.position.x = center[0] + Math.cos(angle) * radius;
+    camera.position.x = center[0] + Math.cos(angle) * radius * Math.cos(height);
+    camera.position.z = center[2] + Math.sin(angle) * radius * Math.cos(height);
+    camera.position.y = center[1] + Math.sin(height) * radius;
+    camera.lookAt(...center);
+    // renderer.render( scene, camera );
+    composer.render();
 }
-
-// Check if WebGL2 is available and start animation loop
